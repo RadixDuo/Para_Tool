@@ -40,10 +40,6 @@ public partial class MainWindowViewModel : ObservableObject
     private LocaService? _locaService;
     private IconService? _iconService;
 
-    // Last-used paths (may differ from saved settings when auto-detected)
-    private string? _lastUsedModsPath;
-    private string? _lastUsedAmpPakPath;
-
     public LangInfo[] Languages => Loc.Instance.AvailableLanguages;
 
     // Tab visual state
@@ -138,42 +134,8 @@ public partial class MainWindowViewModel : ObservableObject
         CurrentView = _constructorView;
     }
 
-    // ── Path settings ─────────────────────────────────────────────────────
-
-    [RelayCommand]
-    private void ShowPathSettings()
-    {
-        var previousView = CurrentView; // captured so Cancel can restore it
-
-        var settings = UiSettingsService.Load();
-
-        // Pre-populate with the currently-active paths when settings not yet saved
-        if (string.IsNullOrEmpty(settings.ModsFolderPath))
-            settings.ModsFolderPath = _lastUsedModsPath;
-        if (string.IsNullOrEmpty(settings.AmpPakFilePath))
-            settings.AmpPakFilePath = _lastUsedAmpPakPath;
-
-        var vm = new PathSettingsViewModel(settings);
-        vm.Applied   += (modsFolder, ampPakPath) => StartScanning(modsFolder, ampPakPath);
-        vm.Cancelled += () => { if (previousView != null) CurrentView = previousView; };
-
-        CurrentView = vm;
-    }
-
-    // ── Initialization ────────────────────────────────────────────────────
-
     private void Initialize()
     {
-        var settings = UiSettingsService.Load();
-
-        // Prefer explicitly-saved paths
-        if (!string.IsNullOrEmpty(settings.ModsFolderPath))
-        {
-            StartScanning(settings.ModsFolderPath, settings.AmpPakFilePath);
-            return;
-        }
-
-        // Fall back to auto-detection
         var modsPath = ModsFolderDetector.Detect();
         if (modsPath == null)
         {
@@ -194,12 +156,8 @@ public partial class MainWindowViewModel : ObservableObject
         StartScanning(path);
     }
 
-    private async void StartScanning(string modsPath, string? ampPakPath = null)
+    private async void StartScanning(string modsPath)
     {
-        // Track for pre-populating the path settings form
-        _lastUsedModsPath   = modsPath;
-        _lastUsedAmpPakPath = ampPakPath;
-
         ShowTabBar = false;
 
         var scanVm = new ScanningViewModel();
@@ -230,12 +188,7 @@ public partial class MainWindowViewModel : ObservableObject
         });
 
         // Run scan + minimum display time in parallel
-        var scanTask = scanner.ScanAsync(
-            modsPath,
-            Localization.Loc.Instance.Lang,
-            progress,
-            default,
-            ampPakPath);   // pass the optional explicit AMP path
+        var scanTask = scanner.ScanAsync(modsPath, Localization.Loc.Instance.Lang, progress);
         var minDisplayTask = Task.Delay(1500);
         await Task.WhenAll(scanTask, minDisplayTask);
 
@@ -281,8 +234,8 @@ public partial class MainWindowViewModel : ObservableObject
         // Check if backup exists
         editor.CheckBackup();
 
-        // Re-scan after AMP restore — carry both paths through the closure
-        editor.RestoreCompleted += () => StartScanning(modsPath, ampPakPath);
+        // Re-scan after AMP restore
+        editor.RestoreCompleted += () => StartScanning(modsPath);
 
         // Restore last session selections
         try
