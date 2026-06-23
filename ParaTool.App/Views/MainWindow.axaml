@@ -13,153 +13,166 @@
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource AppBgBrush}">
 
-    <Grid RowDefinitions="Auto,*,Auto">
-        <!-- Top bar: update button + language selector -->
-        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="8,8,16,4">
-            <!-- Update button (left) -->
-            <ctrl:UpdateButton Grid.Column="0"
-                               State="{Binding UpdateState}"
-                               UpdateVersion="{Binding UpdateVersion}"
-                               Progress="{Binding UpdateProgress}"
-                               ErrorMessage="{Binding UpdateError}"
-                               Tapped="OnUpdateButtonTapped" />
+	<Grid RowDefinitions="Auto,*,Auto">
+		<!-- Top bar: update + paths button + language selector -->
+		<Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="8,8,16,4">
 
-            <!-- Language selector (right) -->
-            <ComboBox Grid.Column="2"
+			<!-- Left: update button + path settings button -->
+			<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4"
+                        VerticalAlignment="Center">
+				<ctrl:UpdateButton State="{Binding UpdateState}"
+                                   UpdateVersion="{Binding UpdateVersion}"
+                                   Progress="{Binding UpdateProgress}"
+                                   ErrorMessage="{Binding UpdateError}"
+                                   Tapped="OnUpdateButtonTapped" />
+
+				<Button Command="{Binding ShowPathSettingsCommand}"
+                        Content="&#x1F4C1; Paths"
+                        FontSize="{DynamicResource FontSize12}"
+                        Padding="8,4"
+                        VerticalAlignment="Center"
+                        ToolTip.Tip="Configure AMP pak and mods folder paths" />
+			</StackPanel>
+
+			<!-- Language selector (right) -->
+			<ComboBox Grid.Column="2"
                       ItemsSource="{Binding Languages}"
                       SelectedItem="{Binding SelectedLanguage}"
                       FontSize="{DynamicResource FontSize12}"
                       MinWidth="100">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate x:DataType="loc:LangInfo">
-                        <TextBlock Text="{Binding Name}" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
-        </Grid>
+				<ComboBox.ItemTemplate>
+					<DataTemplate x:DataType="loc:LangInfo">
+						<TextBlock Text="{Binding Name}" />
+					</DataTemplate>
+				</ComboBox.ItemTemplate>
+			</ComboBox>
+		</Grid>
 
-        <!-- View content -->
-        <ContentControl Grid.Row="1" Content="{Binding CurrentView}">
-            <ContentControl.DataTemplates>
-                <DataTemplate DataType="vm:StartupViewModel">
-                    <v:StartupView />
-                </DataTemplate>
-                <DataTemplate DataType="vm:ScanningViewModel">
-                    <v:ScanningView />
-                </DataTemplate>
-                <DataTemplate DataType="vm:ItemEditorViewModel">
-                    <v:ItemEditorView />
-                </DataTemplate>
-                <DataTemplate DataType="vm:ConstructorViewModel">
-                    <v:ConstructorView />
-                </DataTemplate>
-            </ContentControl.DataTemplates>
-        </ContentControl>
+		<!-- View content -->
+		<ContentControl Grid.Row="1" Content="{Binding CurrentView}">
+			<ContentControl.DataTemplates>
+				<DataTemplate DataType="vm:StartupViewModel">
+					<v:StartupView />
+				</DataTemplate>
+				<DataTemplate DataType="vm:ScanningViewModel">
+					<v:ScanningView />
+				</DataTemplate>
+				<DataTemplate DataType="vm:ItemEditorViewModel">
+					<v:ItemEditorView />
+				</DataTemplate>
+				<DataTemplate DataType="vm:ConstructorViewModel">
+					<v:ConstructorView />
+				</DataTemplate>
+				<DataTemplate DataType="vm:PathSettingsViewModel">
+					<v:PathSettingsView />
+				</DataTemplate>
+			</ContentControl.DataTemplates>
+		</ContentControl>
 
-        <!-- Bottom tab bar (only visible after scan completes) -->
-        <Border Grid.Row="2"
+		<!-- Bottom tab bar (only visible after scan completes) -->
+		<Border Grid.Row="2"
                 IsVisible="{Binding ShowTabBar}"
                 Background="{StaticResource PanelBgBrush}"
                 Padding="8,2,8,2"
                 BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="0,1,0,0">
-            <Grid ColumnDefinitions="Auto,*,Auto">
-                <!-- Tabs (left-aligned, compact) -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal"
+			<Grid ColumnDefinitions="Auto,*,Auto">
+				<!-- Tabs (left-aligned, compact) -->
+				<StackPanel Grid.Column="0" Orientation="Horizontal"
                             VerticalAlignment="Center"
                             Spacing="2">
-                    <!-- PATCHER tab -->
-                    <Button Command="{Binding SwitchToPatcherCommand}"
+					<!-- PATCHER tab -->
+					<Button Command="{Binding SwitchToPatcherCommand}"
                             Background="{Binding PatcherTabBackground}"
                             BorderThickness="0"
                             CornerRadius="6" Padding="0" Cursor="Hand"
                             Name="PatcherTabBtn">
-                        <Border Padding="20,6" CornerRadius="6"
+						<Border Padding="20,6" CornerRadius="6"
                                 BorderThickness="0,0,0,2"
                                 BorderBrush="{Binding PatcherTabBrush}">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <TextBlock Name="PinPatcherIcon" Text="&#x1F4CC;" FontSize="9"
+							<StackPanel Orientation="Horizontal" Spacing="4">
+								<TextBlock Name="PinPatcherIcon" Text="&#x1F4CC;" FontSize="9"
                                            VerticalAlignment="Center" Opacity="0.5"
                                            IsVisible="False" />
-                                <TextBlock Text="{Binding TabPatcher, Source={x:Static loc:Loc.Instance}}"
+								<TextBlock Text="{Binding TabPatcher, Source={x:Static loc:Loc.Instance}}"
                                            FontSize="{DynamicResource FontSize13}" FontWeight="SemiBold"
                                            Foreground="{Binding PatcherTabForeground}"
                                            LetterSpacing="0.5" />
-                            </StackPanel>
-                        </Border>
-                    </Button>
+							</StackPanel>
+						</Border>
+					</Button>
 
-                    <!-- CONSTRUCTOR tab -->
-                    <Button Command="{Binding SwitchToConstructorCommand}"
+					<!-- CONSTRUCTOR tab -->
+					<Button Command="{Binding SwitchToConstructorCommand}"
                             Background="{Binding ConstructorTabBackground}"
                             BorderThickness="0"
                             CornerRadius="6" Padding="0" Cursor="Hand"
                             Name="ConstructorTabBtn">
-                        <Border Padding="20,6" CornerRadius="6"
+						<Border Padding="20,6" CornerRadius="6"
                                 BorderThickness="0,0,0,2"
                                 BorderBrush="{Binding ConstructorTabBrush}">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <TextBlock Name="PinConstructorIcon" Text="&#x1F4CC;" FontSize="9"
+							<StackPanel Orientation="Horizontal" Spacing="4">
+								<TextBlock Name="PinConstructorIcon" Text="&#x1F4CC;" FontSize="9"
                                            VerticalAlignment="Center" Opacity="0.5"
                                            IsVisible="False" />
-                                <TextBlock Text="{Binding TabConstructor, Source={x:Static loc:Loc.Instance}}"
+								<TextBlock Text="{Binding TabConstructor, Source={x:Static loc:Loc.Instance}}"
                                            FontSize="{DynamicResource FontSize13}" FontWeight="SemiBold"
                                            Foreground="{Binding ConstructorTabForeground}"
                                            LetterSpacing="0.5" />
-                            </StackPanel>
-                        </Border>
-                    </Button>
+							</StackPanel>
+						</Border>
+					</Button>
 
-                    <!-- Version badge -->
-                    <TextBlock Text="{Binding AppVersion}"
+					<!-- Version badge -->
+					<TextBlock Text="{Binding AppVersion}"
                                VerticalAlignment="Center"
                                Margin="8,0,0,0"
                                FontSize="{DynamicResource FontSize10}"
                                Foreground="{StaticResource TextMutedBrush}"
                                Opacity="0.4" />
-                </StackPanel>
+				</StackPanel>
 
-                <!-- Settings (right, compact) -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal"
+				<!-- Settings (right, compact) -->
+				<StackPanel Grid.Column="2" Orientation="Horizontal"
                             VerticalAlignment="Center"
                             Spacing="4">
-                    <!-- Font size -->
-                    <ComboBox Name="FontSizeSelector"
+					<!-- Font size -->
+					<ComboBox Name="FontSizeSelector"
                               FontSize="11" Padding="4,2" MinWidth="60"
                               ToolTip.Tip="{Binding TipFontSize, Source={x:Static loc:Loc.Instance}}">
-                        <ComboBoxItem Content="A -30%" />
-                        <ComboBoxItem Content="A 0%" />
-                        <ComboBoxItem Content="A +50%" />
-                    </ComboBox>
+						<ComboBoxItem Content="A -30%" />
+						<ComboBoxItem Content="A 0%" />
+						<ComboBoxItem Content="A +50%" />
+					</ComboBox>
 
-                    <!-- Fullscreen toggle -->
-                    <Button Name="FullscreenBtn" Click="OnFullscreenClick"
+					<!-- Fullscreen toggle -->
+					<Button Name="FullscreenBtn" Click="OnFullscreenClick"
                             Background="Transparent" BorderThickness="0"
                             Padding="4,2" Cursor="Hand" FontSize="14"
                             ToolTip.Tip="Fullscreen (F11)">
-                        <TextBlock Name="FullscreenIcon" Text="&#x26F6;" />
-                    </Button>
+						<TextBlock Name="FullscreenIcon" Text="&#x26F6;" />
+					</Button>
 
-                    <!-- Theme -->
-                    <ComboBox Name="ThemeSelector"
+					<!-- Theme -->
+					<ComboBox Name="ThemeSelector"
                               FontSize="11" Padding="4,2" MinWidth="120"
                               ToolTip.Tip="{Binding TipColorTheme, Source={x:Static loc:Loc.Instance}}">
-                        <ComboBoxItem Content="Paramonov" />
-                        <ComboBoxItem Content="Light" />
-                        <ComboBoxItem Content="Dota 2" />
-                        <ComboBoxItem Content="Cyberpunk" />
-                        <ComboBoxItem Content="WoW" />
-                        <ComboBoxItem Content="Nord" />
-                        <ComboBoxItem Content="Synthwave" />
-                        <ComboBoxItem Content="BG3" />
-                        <ComboBoxItem Content="Pinky" />
-                        <ComboBoxItem Content="Hacker" />
-                        <ComboBoxItem Content="Clown" />
-                        <ComboBoxItem Content="Gov" />
-                        <ComboBoxItem Content="Nature" />
-                    </ComboBox>
-                </StackPanel>
-            </Grid>
-        </Border>
+						<ComboBoxItem Content="Paramonov" />
+						<ComboBoxItem Content="Light" />
+						<ComboBoxItem Content="Dota 2" />
+						<ComboBoxItem Content="Cyberpunk" />
+						<ComboBoxItem Content="WoW" />
+						<ComboBoxItem Content="Nord" />
+						<ComboBoxItem Content="Synthwave" />
+						<ComboBoxItem Content="BG3" />
+						<ComboBoxItem Content="Pinky" />
+						<ComboBoxItem Content="Hacker" />
+						<ComboBoxItem Content="Clown" />
+						<ComboBoxItem Content="Gov" />
+						<ComboBoxItem Content="Nature" />
+					</ComboBox>
+				</StackPanel>
+			</Grid>
+		</Border>
 
-    </Grid>
+	</Grid>
 </Window>
