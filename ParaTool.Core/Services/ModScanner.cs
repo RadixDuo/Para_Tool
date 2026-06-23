@@ -50,35 +50,61 @@ public sealed class ModScanner
         _vanillaDb = vanillaDb;
     }
 
-    public async Task<ScanResult> ScanAsync(string modsFolder, string langCode = "en",
-        IProgress<ScanProgress>? progress = null, CancellationToken ct = default)
+    public async Task<ScanResult> ScanAsync(
+        string modsFolder,
+        string langCode = "en",
+        IProgress<ScanProgress>? progress = null,
+        CancellationToken ct = default,
+        string? overrideAmpPakPath = null)   // explicit AMP pak path — skips auto-detect
     {
-        var pakFiles = Directory.GetFiles(modsFolder, "*.pak");
-        if (pakFiles.Length == 0)
-            return new ScanResult { Error = "No .pak files found in Mods folder." };
+        if (!Directory.Exists(modsFolder))
+            return new ScanResult { Error = $"Mods folder not found: {modsFolder}" };
 
-        // Find AMP pak
-        var ampPaks = pakFiles.Where(p =>
-            Path.GetFileName(p).StartsWith("REL_Full_Ancient_", StringComparison.OrdinalIgnoreCase)).ToArray();
-
-        if (ampPaks.Length == 0)
-            return new ScanResult { Error = "AMP pak not found. Install Ancient Mega Pack first." };
-
-        // Multiple AMP paks: keep the largest (latest version), clean the rest
         string ampPakPath;
         int cleanedOldPaks = 0;
-        if (ampPaks.Length > 1)
+        string[] pakFiles;
+
+        if (!string.IsNullOrEmpty(overrideAmpPakPath))
         {
-            ampPakPath = ampPaks.OrderByDescending(p => new FileInfo(p).Length).First();
-            cleanedOldPaks = AmpBackupService.CleanOldAmpPaks(modsFolder, ampPakPath);
-            // Re-read after cleanup
-            pakFiles = Directory.GetFiles(modsFolder, "*.pak");
+            // ── User-specified AMP pak: skip auto-detection ──────────────
+            if (!File.Exists(overrideAmpPakPath))
+                return new ScanResult { Error = $"AMP pak file not found: {overrideAmpPakPath}" };
+
+            ampPakPath = overrideAmpPakPath;
+            // Scan only the mods folder; AMP lives outside it
+            pakFiles = Directory.GetFiles(modsFolder, "*.pak", SearchOption.AllDirectories);
         }
         else
         {
-            ampPakPath = ampPaks[0];
+            // ── Auto-detect AMP pak from modsFolder ──────────────────────
+            pakFiles = Directory.GetFiles(modsFolder, "*.pak", SearchOption.AllDirectories);
+            if (pakFiles.Length == 0)
+                return new ScanResult { Error = "No .pak files found in Mods folder." };
+
+            var ampPaks = pakFiles.Where(p =>
+                Path.GetFileName(p).StartsWith("REL_Full_Ancient_", StringComparison.OrdinalIgnoreCase)).ToArray();
+
+            if (ampPaks.Length == 0)
+                return new ScanResult { Error = "AMP pak not found. Install Ancient Mega Pack first." };
+
+            // Multiple AMP paks: keep the largest (latest version), clean the rest
+            if (ampPaks.Length > 1)
+            {
+                ampPakPath = ampPaks.OrderByDescending(p => new FileInfo(p).Length).First();
+                cleanedOldPaks = AmpBackupService.CleanOldAmpPaks(modsFolder, ampPakPath);
+                // Re-read after cleanup
+                pakFiles = Directory.GetFiles(modsFolder, "*.pak", SearchOption.AllDirectories);
+            }
+            else
+            {
+                ampPakPath = ampPaks[0];
+            }
         }
-        var nonAmpPaks = pakFiles.Where(p => p != ampPakPath).ToArray();
+
+        // Exclude AMP pak from the mod list regardless of where it lives
+        var nonAmpPaks = pakFiles
+            .Where(p => !p.Equals(ampPakPath, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
 
         // Extract AMP integration info — items already in AMP TT are marked as integrated in mods
         progress?.Report(new ScanProgress { Stage = "ScanAMP", Percent = 0 });

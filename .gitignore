@@ -63,3 +63,5 @@ tools/lsx-converter/
 
 # User scratch folder
 MISC NOT COMMIT/
+/ParaTool.App/Properties/PublishProfiles
+/ParaTool.Core/Properties/PublishProfiles
